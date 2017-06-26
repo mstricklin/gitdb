@@ -1,0 +1,46 @@
+all files in a commit
+   git cat-file -p <commit-name>^{tree}
+
+dump object contents:
+   git cat-file -p  ${oid}
+
+===== stash file & commit ============
+echo <contents> | git hash-object -w --stdin
+  -> results in SHA1
+git update-index --add --cacheinfo 100644,<hash>,<filename>
+git write-tree
+  -> results in SHA1
+git commit-tree -m <message> <write-hash> -p <parent-commit-hash>
+  -> results in SHA1
+git update-ref refs/head/<ref-name> <commit-hash>
+
+===== abort an add =============
+Object will remain in git db, even deleted. will be cleaned up by 'git prune'
+
+echo <contents> | git hash-object -w --stdin
+  -> results in SHA1
+git update-index --add --cacheinfo 100644,<hash>,<filename>
+git ls-files -s
+git rm --cached <filename>
+git ls-files -s
+
+===== remove a committed file ===========
+<repo with files...>
+git rm --cached <filename>
+git write-tree
+  -> results in SHA1
+git commit-tree -m <message> <write-hash> -p <parent-commit-hash>
+git update-ref refs/head/<ref-name> <commit-hash>
+
+===== alter un-commited file =========
+Previous alterations will remain in db. Will be cleaned up by 'git prune'.
+
+echo 'rev 1' | git hash-object -w --stdin
+   66774ab995e67363045db998255a231919211f2a
+git update-index --add --cacheinfo 100644,66774ab995e67363045db998255a231919211f2a,a.txt
+echo 'rev 2' | git hash-object -w --stdin
+   771ac98f5bcf47795bc785ef3b35456558b024fd
+git update-index --add --cacheinfo 100644,771ac98f5bcf47795bc785ef3b35456558b024fd,a.txt
+==> then commit <==
+===== branch =========
+
