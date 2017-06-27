@@ -1,5 +1,7 @@
 package edu.utexas.arlut.ciads;
 
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.impls.gitdb.GitGraph;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -17,69 +19,22 @@ import static org.eclipse.jgit.lib.Constants.*;
 public class App {
     public static void main(String[] args) throws IOException, IllegalStateException, GitAPIException {
         log.info(" Foo! ");
+        GitGraph g = GitGraph.of();
 
+        g.addVertex(null);
+        g.addVertex(null);
+        g.addVertex(null);
+        g.txDump();
+        Vertex v0 = g.getVertex(1L);
+        log.info("found vertex {}: {}", v0.getId(), v0);
+        g.removeVertex(v0);
+        g.txDump();
 
+        log.info("===========");
+        for (Vertex v: g.getVertices()) {
+           log.info("{} => {}", v.getId(), v);
+        }
 
-        File gitDBDir = new File("gitdb.git");
-
-        Git git = Git.init().setBare(true).setDirectory( gitDBDir ).call();
-        Repository repo = git.getRepository();
-
-
-
-        // hash-object -w
-        ObjectInserter objectInserter = repo.newObjectInserter();
-        byte[] bytes = "Shazam".getBytes( "utf-8" );
-        ObjectId oid = objectInserter.insert( OBJ_BLOB, bytes );
-        objectInserter.flush();
-        log.info("blob oid {}", oid.getName());
-
-        TreeFormatter treeFormatter = new TreeFormatter();
-        // update-index
-        treeFormatter.append("shazam.txt", FileMode.REGULAR_FILE, oid);
-        // ... append rest of files...?
-        // write-tree
-        ObjectId treeId = objectInserter.insert(treeFormatter);
-        objectInserter.flush();
-
-        log.info("treeId oid {}", treeId.getName());
-
-        CommitBuilder commitBuilder = new CommitBuilder();
-        commitBuilder.setTreeId( treeId );
-        commitBuilder.setMessage( "Shazam commit!" );
-        PersonIdent person = new PersonIdent( "me", "me@example.com" );
-        commitBuilder.setAuthor( person );
-        commitBuilder.setCommitter( person );
-        ObjectId commitId = objectInserter.insert( commitBuilder );
-        objectInserter.flush();
-        log.info("commit oid {}", commitId.getName());
-
-
-        RefUpdate refUpdate = repo.getRefDatabase().newUpdate(R_HEADS + MASTER, true);
-        refUpdate.setForceUpdate(true);
-        refUpdate.setNewObjectId(commitId);
-        refUpdate.update();
-
-
-
-
-
-//        FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder()
-//                .setMustExist(false)
-//                .setBare()
-//                .setGitDir( gitDBDir );
-//        Repository repo = repositoryBuilder.build();
-//
-//        Git g = new Git( repo );
-//
-//        log.info("git dir {}", repositoryBuilder.getGitDir().getPath());
-//        log.info("repository {}", repo);
-//
-//        Ref head = repo.exactRef("refs/heads/master");
-//        log.info("Ref of refs/heads/master: {}", head);
-
-        log.info("Git {}", git);
-        log.info("Repo {}", git.getRepository().toString());
 
     }
 }

@@ -12,6 +12,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <blueprints.version>2.4.0</blueprints.version>
     </properties>
 
     <dependencies>
@@ -24,7 +25,7 @@
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <version>4.7.1.201706071930-r</version>
+            <version>3.7.0.201502260915-r</version>
         </dependency>
 
         <dependency>
@@ -41,6 +42,22 @@
         	<groupId>org.slf4j</groupId>
         	<artifactId>slf4j-log4j12</artifactId>
         	<version>1.7.16</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.blueprints</groupId>
+            <artifactId>blueprints-core</artifactId>
+            <version>${blueprints.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop</groupId>
+            <artifactId>frames</artifactId>
+            <version>2.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.blueprints</groupId>
+            <artifactId>blueprints-test</artifactId>
+            <version>${blueprints.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
         <build>

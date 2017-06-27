@@ -64,7 +64,7 @@ public class GitInternalsLearningTest {
         ObjectId treeId = insertObject(Constants.OBJ_TREE, treeFormatter.toByteArray());
 
         assertEquals(Constants.OBJ_TREE, loadObject(treeId).getType());
-        assertArrayEquals(new String[]{"hello-world.txt"}, listPathNames(treeId));
+        assertArrayEquals(new String[] {"hello-world.txt"}, listPathNames(treeId));
     }
 
     @Test
@@ -97,7 +97,7 @@ public class GitInternalsLearningTest {
         treeFormatter.append("folder", FileMode.TREE, subTreeId);
         ObjectId treeId = insertObject(Constants.OBJ_TREE, treeFormatter.toByteArray());
 
-        assertArrayEquals(new String[]{"folder/file.txt", "folder"}, listPathNames(treeId));
+        assertArrayEquals(new String[] {"folder/file.txt", "folder"}, listPathNames(treeId));
     }
 
     @Before
@@ -112,31 +112,50 @@ public class GitInternalsLearningTest {
     }
 
     private ObjectId insertObject(int type, byte[] content) throws IOException {
-        try (ObjectInserter objectInserter = repository.newObjectInserter()) {
-            ObjectId result = objectInserter.insert(type, content);
-            objectInserter.flush();
-            return result;
-        }
+//        try (ObjectInserter objectInserter = repository.newObjectInserter()) {
+//            ObjectId result = objectInserter.insert(type, content);
+//            objectInserter.flush();
+//            return result;
+//        }
+
+        ObjectInserter objectInserter = repository.newObjectInserter();
+        ObjectId result = objectInserter.insert(type, content);
+        objectInserter.flush();
+        objectInserter.release();
+        return result;
     }
 
     private ObjectLoader loadObject(ObjectId objectId) throws IOException {
-        try (ObjectReader objectReader = repository.newObjectReader()) {
-            ObjectLoader result = objectReader.open(objectId);
-            return result;
-        }
+//        try (ObjectReader objectReader = repository.newObjectReader()) {
+//            ObjectLoader result = objectReader.open(objectId);
+//            return result;
+//        }
+        ObjectReader objectReader = repository.newObjectReader();
+        ObjectLoader result = objectReader.open(objectId);
+        objectReader.release();
+        return result;
     }
 
     private String[] listPathNames(ObjectId treeId) throws IOException {
         Collection<String> pathNames = new ArrayList<>();
-        try (TreeWalk treeWalk = new TreeWalk(repository)) {
-            treeWalk.setRecursive(true);
-            treeWalk.setPostOrderTraversal(true);
-            treeWalk.addTree(treeId);
-            while (treeWalk.next()) {
-                pathNames.add(treeWalk.getPathString());
-            }
-            return (String[]) pathNames.toArray(new String[pathNames.size()]);
+        TreeWalk treeWalk = new TreeWalk(repository);
+        treeWalk.setRecursive(true);
+        treeWalk.setPostOrderTraversal(true);
+        treeWalk.addTree(treeId);
+        while (treeWalk.next()) {
+            pathNames.add(treeWalk.getPathString());
         }
+        treeWalk.release();
+        return (String[])pathNames.toArray(new String[pathNames.size()]);
     }
 
+//        try (TreeWalk treeWalk = new TreeWalk(repository)) {
+//            treeWalk.setRecursive(true);
+//            treeWalk.setPostOrderTraversal(true);
+//            treeWalk.addTree(treeId);
+//            while (treeWalk.next()) {
+//                pathNames.add(treeWalk.getPathString());
+//            }
+//            return (String[])pathNames.toArray(new String[pathNames.size()]);
+//        }
 }
