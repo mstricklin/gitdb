@@ -3,13 +3,7 @@ package edu.utexas.arlut.ciads;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.gitdb.GitGraph;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.*;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-import org.eclipse.jgit.util.FS;
 
 import java.io.*;
 
@@ -28,8 +22,8 @@ public class App {
         Vertex v0 = g.getVertex(1L);
         log.info("found vertex {}: {}", v0.getId(), v0);
         g.removeVertex(v0);
-        g.txDump();
 
+        g.txDump();
         log.info("===========");
         for (Vertex v: g.getVertices()) {
            log.info("{} => {}", v.getId(), v);

@@ -143,8 +143,8 @@ public class GitInternalsLearningTest {
         treeWalk.setPostOrderTraversal(true);
         treeWalk.addTree(treeId);
         while (treeWalk.next()) {
-            pathNames.add(treeWalk.getPathString());
         }
+        pathNames.add(treeWalk.getPathString());
         treeWalk.release();
         return (String[])pathNames.toArray(new String[pathNames.size()]);
     }

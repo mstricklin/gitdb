@@ -4,6 +4,8 @@ all files in a commit
 dump object contents:
    git cat-file -p  ${oid}
 
+Look into pulling an existing tree(index) into a new tree with git read-tree
+
 ===== stash file & commit ============
 echo <contents> | git hash-object -w --stdin
   -> results in SHA1
