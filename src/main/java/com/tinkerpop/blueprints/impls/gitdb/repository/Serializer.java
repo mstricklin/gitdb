@@ -22,7 +22,8 @@ public class Serializer {
     }
     public String serialize(Object o) {
         try {
-            return mapper.writeValueAsString(o);
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(o);
+//            return mapper.writeValueAsString(o);
         } catch (JsonProcessingException e) {
             log.error("Error serializing Object {} {}", o.getClass().getSimpleName(), e);
         }

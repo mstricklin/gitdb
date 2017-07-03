@@ -56,8 +56,8 @@ public class App {
         log.info("Serialized {}", ser.serialize(xv));
 
         Repo r = new Repo();
-        ObjectId oid = ObjectId.fromString("3a3c883ced54f2c7e8f7a1aa51e486e60d9ec0aa");
-//        ObjectId oid = r.insertBlob(serXV.getBytes());
+//        ObjectId oid = ObjectId.fromString("3a3c883ced54f2c7e8f7a1aa51e486e60d9ec0aa");
+        ObjectId oid = r.insertBlob(serXV.getBytes());
         log.info("OID: {}", oid);
 
         String ds = new String(r.readBlob(oid));
