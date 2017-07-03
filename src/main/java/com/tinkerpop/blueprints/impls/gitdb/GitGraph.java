@@ -110,9 +110,9 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
     // =================================
     @Override
     public Vertex addVertex(Object id) {
-        XVertex xv = new XVertex(vertexCounter.getAndIncrement(), this);
+        XVertex xv = new XVertex(vertexCounter.getAndIncrement());
         tx().addVertex(xv);
-        XVertexProxy vp = XVertexProxy.of(xv);
+        XVertexProxy vp = XVertexProxy.of(xv, this);
         return vp;
     }
     @Override
@@ -127,7 +127,7 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
                 longId = ((Number)id).longValue();
             else
                 longId = Double.valueOf(id.toString()).longValue();
-            return XVertexProxy.of(tx().getVertex(longId));
+            return XVertexProxy.of(tx().getVertex(longId), this);
         } catch (XCache.NotFoundException e) {
             log.error("could not find vertex by id {}", id);
         } catch (NumberFormatException e) {

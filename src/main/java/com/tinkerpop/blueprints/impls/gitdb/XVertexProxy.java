@@ -26,13 +26,12 @@ public class XVertexProxy extends XElementProxy implements Vertex {
             }
         };
     }
+    public static XVertexProxy of(final XVertex xv, final GitGraph gg) {
+        return new XVertexProxy(xv.key(), gg);
+    }
     public static XVertexProxy of(long id, final GitGraph graph) {
         return new XVertexProxy(id, graph);
     }
-    public static XVertexProxy of(final XVertex xv) {
-        return new XVertexProxy(xv.id, xv.graph);
-    }
-
 
     XVertexProxy(long id, final GitGraph graph) {
         super(id, graph);
@@ -91,18 +90,22 @@ public class XVertexProxy extends XElementProxy implements Vertex {
     // =================================
     @ToString(callSuper = true)
     public static class XVertex extends XElement {
-        XVertex(long id, GitGraph graph) {
-            super(id, graph);
+        private XVertex() { // no-arg ctor for jackson-json rehydration
+            this(-1L);
+        }
+        public XVertex(long id) {
+            super(id);
             outEdges = newHashSet();
             inEdges = newHashSet();
         }
-        XVertex(final XVertex other) {
-            super(other);
-            outEdges = newHashSet(other.outEdges);
-            inEdges = newHashSet(other.inEdges);
+        XVertex(final XVertex xv) {
+            super(xv);
+            outEdges = newHashSet(xv.outEdges);
+            inEdges = newHashSet(xv.inEdges);
         }
 
         private final Set<Integer> outEdges;
         private final Set<Integer> inEdges;
     }
+    // =================================
 }

@@ -54,25 +54,24 @@ public abstract class XElementProxy implements Element, Keyed {
     }
     // =================================
     @ToString
-    static class XElement implements Keyed {
-        XElement(final XElement other) {
-            this.id = other.id;
-            this.graph = other.graph;
-            this.properties = newHashMap(other.properties);
+    public static abstract class XElement implements Keyed {
+        XElement(final XElement ye) {
+            this.id = ye.id;
+            this.properties = newHashMap(ye.properties);
         }
-        XElement(long id, GitGraph graph) {
+        XElement(long id) {
             this.id = id;
-            this.graph = graph;
             this.properties = newHashMap();
         }
-        protected final long id;
-        protected final GitGraph graph;
-        private final Map<String, Object> properties;
         @Override
         public long key() {
             return id;
         }
+
+        private final long id;
+        private final Map<String, Object> properties;
     }
+    // =================================
     protected final long id;
     protected final GitGraph graph;
 }
