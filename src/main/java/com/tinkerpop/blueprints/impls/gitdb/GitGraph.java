@@ -95,7 +95,7 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
     public void txDump() {
         if (!log.isInfoEnabled())
             return;
-        tx().dump();
+//        tx().dump();
     }
 
     XTransaction tx() {
@@ -111,7 +111,7 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
     @Override
     public Vertex addVertex(Object id) {
         XVertex xv = new XVertex(vertexCounter.getAndIncrement());
-        tx().addVertex(xv);
+//        tx().addVertex(xv);
         XVertexProxy vp = XVertexProxy.of(xv, this);
         return vp;
     }
@@ -127,7 +127,7 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
                 longId = ((Number)id).longValue();
             else
                 longId = Double.valueOf(id.toString()).longValue();
-            return XVertexProxy.of(tx().getVertex(longId), this);
+//            return XVertexProxy.of(tx().getVertex(longId), this);
         } catch (XCache.NotFoundException e) {
             log.error("could not find vertex by id {}", id);
         } catch (NumberFormatException e) {
@@ -145,8 +145,8 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
 
             XVertexProxy vp = (XVertexProxy)vertex;
 
-            XVertex v = tx().getVertex(vp.key());
-            tx().removeVertex(v);
+//            XVertex v = tx().getVertex(vp.key());
+//            tx().removeVertex(v);
         } catch (XCache.NotFoundException e) {
         }
         // TODO: remove from indices
@@ -154,8 +154,9 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
 
     @Override
     public Iterable<Vertex> getVertices() {
-        Iterator<Vertex> it4 = Iterators.transform(tx().getVertices(), XVertexProxy.makeVertex(this));
-        return newArrayList(it4);
+//        Iterator<Vertex> it4 = Iterators.transform(tx().getVertices(), XVertexProxy.makeVertex(this));
+//        return newArrayList(it4);
+        return null;
     }
     @Override
     public Iterable<Vertex> getVertices(String key, Object value) {

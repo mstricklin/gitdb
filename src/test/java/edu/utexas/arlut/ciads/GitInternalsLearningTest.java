@@ -40,6 +40,20 @@ import org.junit.rules.TemporaryFolder;
 
 public class GitInternalsLearningTest {
 
+    /*
+    Ref HEAD = repository.getRef("refs/heads/master");
+    RevWalk walk = new RevWalk(repository);
+
+    RevWalk walk = new RevWalk(repository);
+    RevCommit commit = walk.parseCommit(objectIdOfCommit);
+
+    RevWalk walk = new RevWalk(repository);
+    RevTag tag = walk.parseTag(objectIdOfTag);
+
+    RevWalk walk = new RevWalk(repository);
+    RevTree tree = walk.parseTree(objectIdOfTree);
+*/
+
     @Rule
     public final TemporaryFolder tempFolder = new TemporaryFolder();
 

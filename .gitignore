@@ -31,3 +31,5 @@ t
 # IntelliJ
 .idea
 *.iml
+
+gitdb.git/

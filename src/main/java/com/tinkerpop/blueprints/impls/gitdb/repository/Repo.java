@@ -9,12 +9,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.*;
+import org.eclipse.jgit.revwalk.RevTree;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
 import static org.eclipse.jgit.lib.Constants.OBJ_BLOB;
+import static org.eclipse.jgit.lib.Constants.OBJ_TREE;
 
 @Slf4j
 public class Repo {
@@ -23,6 +25,9 @@ public class Repo {
 
         Git git = Git.init().setBare(true).setDirectory(gitDBDir).call();
         repo = git.getRepository();
+    }
+    public Repository getRepo() {
+        return repo;
     }
     public ObjectId insertBlob(byte[] b) throws IOException {
         return insertObject(OBJ_BLOB, b);
@@ -37,6 +42,10 @@ public class Repo {
     }
     public byte[] readBlob(ObjectId oid) throws IOException {
         return readObject(OBJ_BLOB, oid);
+    }
+    public byte[] readTree(ObjectId oid) throws IOException {
+//        RevTree rt
+        return readObject(OBJ_TREE, oid);
     }
     public byte[] readObject(int type, ObjectId oid) throws IOException {
         try (ReleasingObjectReader or = tlObjectReader.get()) {

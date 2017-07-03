@@ -1,0 +1,54 @@
+
+Node 0-9 in one tree.
+
+Node 10-99, rebalance to tree0-99 -> tree0-9
+                                  -> tree10-19
+				    ...
+
+
+Node 100-999, rebalance to tree0-999 -> tree0-99    -> tree0-9
+                                                    -> tree10-19
+						        ...
+                                     -> tree100-199 -> tree100-199
+                                                    -> tree200-299
+						        ...
+					...
+
+Node 1000-9999, rebalance to tree0-9999 -> tree0-999    -> tree0-99 -> tree0-9
+                                                                    -> tree10-19
+								      ...
+                                                        -> tree100-199 -> tree100-109
+                                                                       -> tree110-119
+								      ...
+						          ...
+                                         -> tree1000-1999 -> tree1000-1099 -> tree1000-1009
+                                                                           -> tree1010-1019
+								             ...
+                                                          -> tree1100-1199 -> tree1100-1109
+                                                                           -> tree1110-1119
+								             ...
+
+Keep in byte-wise directories?
+Node (2^64)-2 = Node 18446744073709551614L = Node 0xfffffffffffffffe
+name ff/ff/ff/ff/ff/ff/ff/fe.json
+
+Node 23 = Node 0x17
+name 1/7.json
+
+
+ff/ff/ff/ff.json
+Node (2^32)-2 = Node 4294967295 = Node 0xfffffffe
+name /nodes/ff/ff/ff/fe.json
+or?  /nodes/255/255/255/254.json
+or?  /nodes/255/255/255/4294967295.json
+trees are treeNodes -> tree255 -> tree255 -> tree255 -> blob254
+
+Edge (2^32)-2 = Edge 4294967295 = Edge 0xfffffffe
+or?  /edges/255/255/255/254.json
+trees are treeEdges -> tree255 -> tree255 -> tree255 -> blob254
+
+
+int IDs provides for 4,294,967,295 nodes
+
+Can we store new nodes in the top-most, until we hit 255, then move down & re-start?
+    Is this premature optimization?

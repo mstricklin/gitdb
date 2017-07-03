@@ -2,6 +2,11 @@
 package com.tinkerpop.blueprints.impls.gitdb;
 
 import static com.google.common.collect.Maps.newHashMap;
+import static com.google.common.collect.Sets.newHashSet;
+import static com.tinkerpop.blueprints.impls.gitdb.XVertexProxy.*;
+
+import java.util.Map;
+import java.util.Set;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -48,7 +53,7 @@ public class XEdgeProxy extends XElementProxy implements Edge {
         return StringFactory.edgeString(this);
     }
     // =================================
-    static class XEdge extends XElement {
+    public static class XEdge extends XElement {
         XEdge(final XEdge ie) {
             super(ie);
             this.outId = ie.outId;
@@ -67,4 +72,6 @@ public class XEdgeProxy extends XElementProxy implements Edge {
     // =================================
     private final long outId, inId;
     private final String label;
+
+
 }
