@@ -2,5 +2,5 @@
 package com.tinkerpop.blueprints.impls.gitdb;
 
 public interface Keyed {
-    long key();
+    int key();
 }

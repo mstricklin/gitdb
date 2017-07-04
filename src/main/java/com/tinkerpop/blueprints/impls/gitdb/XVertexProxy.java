@@ -18,10 +18,10 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class XVertexProxy extends XElementProxy implements Vertex {
-    public static Function<Long, Vertex> makeVertex(final GitGraph graph) {
-        return new Function<Long, Vertex>() {
+    public static Function<Integer, XVertexProxy> makeVertex(final GitGraph graph) {
+        return new Function<Integer, XVertexProxy>() {
             @Override
-            public Vertex apply(Long id) {
+            public XVertexProxy apply(Integer id) {
                 return XVertexProxy.of(id, graph);
             }
         };
@@ -29,11 +29,11 @@ public class XVertexProxy extends XElementProxy implements Vertex {
     public static XVertexProxy of(final XVertex xv, final GitGraph gg) {
         return new XVertexProxy(xv.key(), gg);
     }
-    public static XVertexProxy of(long id, final GitGraph graph) {
+    public static XVertexProxy of(int id, final GitGraph graph) {
         return new XVertexProxy(id, graph);
     }
 
-    XVertexProxy(long id, final GitGraph graph) {
+    XVertexProxy(int id, final GitGraph graph) {
         super(id, graph);
     }
     @Override
@@ -75,12 +75,14 @@ public class XVertexProxy extends XElementProxy implements Vertex {
         return graph.addEdge(null, this, inVertex, label);
     }
     // =================================
-    void addOutEdge(long edgeId) {
-//        qOutEdges.add(edgeId);
+    void addOutEdge(int edgeId) {
+        getMutableImpl().outEdges.add(edgeId);
     }
-    // =================================
-    void addInEdge(long edgeId) {
-//        qInEdges.add(edgeId);
+    void addInEdge(int edgeId) {
+        getMutableImpl().inEdges.add(edgeId);
+    }
+    public void remove() {
+        this.graph.removeVertex(this);
     }
     // =================================
     @Override
@@ -88,12 +90,20 @@ public class XVertexProxy extends XElementProxy implements Vertex {
         return StringFactory.vertexString(this);
     }
     // =================================
+    @Override
+    protected XVertex getImpl() {
+        return graph.tx().getVertex(key());
+    }
+    @Override
+    protected XVertex getMutableImpl() {
+        return graph.tx().getMutableVertex(key());
+    }
     @ToString(callSuper = true)
     public static class XVertex extends XElement {
         private XVertex() { // no-arg ctor for jackson-json rehydration
-            this(-1L);
+            this(-1);
         }
-        public XVertex(long id) {
+        public XVertex(int id) {
             super(id);
             outEdges = newHashSet();
             inEdges = newHashSet();

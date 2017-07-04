@@ -4,13 +4,16 @@ package com.tinkerpop.blueprints.impls.gitdb;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.tinkerpop.blueprints.impls.gitdb.IterableUtil.once;
+import static com.tinkerpop.blueprints.impls.gitdb.XEdgeProxy.*;
 import static com.tinkerpop.blueprints.impls.gitdb.XVertexProxy.XVertex;
 
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.tinkerpop.blueprints.*;
 
@@ -76,14 +79,17 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
     f3f4be74e50c9cf036cc7d6b26f558f5c5f3fa51
     */
     public static final String anOID = "74fc730e803e0bfca94aa9ae7f7f156cd9773502";
+
     public static GitGraph of() {
         return new GitGraph();
     }
+
     public GitGraph() {
-        vertexCounter.set(1L);
-        edgeCounter.set(1L);
+        vertexCounter.set(1);
+        edgeCounter.set(1);
 
     }
+
     @Override
     public Features getFeatures() {
         return FEATURES;
@@ -92,42 +98,47 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
     public void baselineDump() {
 
     }
+
     public void txDump() {
         if (!log.isInfoEnabled())
             return;
-//        tx().dump();
+        tx().dump();
     }
 
     XTransaction tx() {
         return threadTransaction.get();
     }
+
     private ThreadLocal<XTransaction> threadTransaction = new ThreadLocal<XTransaction>() {
         @Override
         protected XTransaction initialValue() {
             return new XTransaction(anOID);
         }
     };
+
     // =================================
     @Override
     public Vertex addVertex(Object id) {
         XVertex xv = new XVertex(vertexCounter.getAndIncrement());
-//        tx().addVertex(xv);
-        XVertexProxy vp = XVertexProxy.of(xv, this);
-        return vp;
+        tx().addVertex(xv);
+        return XVertexProxy.of(xv, this);
     }
+
     @Override
     public Vertex getVertex(Object id) {
+        // TODO: add to indices
         if (null == id)
             throw ExceptionFactory.vertexIdCanNotBeNull();
         try {
-            final Long longId;
-            if (id instanceof Long)
-                longId = (Long)id;
+            final Integer intId;
+            if (id instanceof Integer)
+                intId = (Integer) id;
             else if (id instanceof Number)
-                longId = ((Number)id).longValue();
+                intId = ((Number) id).intValue();
             else
-                longId = Double.valueOf(id.toString()).longValue();
-//            return XVertexProxy.of(tx().getVertex(longId), this);
+                intId = Double.valueOf(id.toString()).intValue();
+            XVertex xv = tx().getVertex(intId);
+            return (null == xv) ? null : XVertexProxy.of(tx().getVertex(intId), this);
         } catch (XCache.NotFoundException e) {
             log.error("could not find vertex by id {}", id);
         } catch (NumberFormatException e) {
@@ -135,47 +146,52 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
         }
         return null;
     }
+
     @Override
     public void removeVertex(Vertex vertex) {
+        // TODO: remove from indices
         try {
-            // TODO: queue W-B
             checkNotNull(vertex);
             for (Edge e : vertex.getEdges(Direction.BOTH))
                 removeEdge(e);
 
-            XVertexProxy vp = (XVertexProxy)vertex;
-
-//            XVertex v = tx().getVertex(vp.key());
-//            tx().removeVertex(v);
+            XVertexProxy vp = (XVertexProxy) vertex;
+            tx().removeVertex(vp.key());
         } catch (XCache.NotFoundException e) {
+            log.error("Vertex {} not found", vertex);
         }
-        // TODO: remove from indices
     }
 
     @Override
     public Iterable<Vertex> getVertices() {
-//        Iterator<Vertex> it4 = Iterators.transform(tx().getVertices(), XVertexProxy.makeVertex(this));
-//        return newArrayList(it4);
-        return null;
+        Iterator<Integer> vIdL = tx().getVertices();
+        Iterator<XVertexProxy> vL = Iterators.transform(vIdL, XVertexProxy.makeVertex(this));
+        return new ImmutableList.Builder<Vertex>()
+                        .addAll(vL)
+                        .build();
     }
+
     @Override
     public Iterable<Vertex> getVertices(String key, Object value) {
         // TODO: use indices
         return new PropertyFilteredIterable<>(key, value, this.getVertices());
     }
+
     // =================================
     @Override
     public Edge addEdge(Object id, Vertex outVertex, Vertex inVertex, String label) {
-        // TODO: add to indices?
-        XVertexProxy oV = (XVertexProxy)outVertex;
-        XVertexProxy iV = (XVertexProxy)inVertex;
-        XEdgeProxy e = XEdgeProxy.of(edgeCounter.getAndIncrement(),
-                                     oV.key(), iV.key(), label, this);
+        // TODO: add to indices
+        XVertexProxy oV = (XVertexProxy) outVertex;
+        XVertexProxy iV = (XVertexProxy) inVertex;
+        XEdge xe = new XEdge(edgeCounter.getAndIncrement(),
+                oV.key(), iV.key(), label);
+        tx().addEdge(xe);
+        XEdgeProxy e = XEdgeProxy.of(xe, this);
         oV.addOutEdge(e.key());
         iV.addInEdge(e.key());
-//        cache.edge().add(e.key(), e);
         return e;
     }
+
     @Override
     public Edge getEdge(Object id) {
         if (null == id)
@@ -183,7 +199,7 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
         try {
             final Integer intID;
             if (id instanceof Integer)
-                intID = (Integer)id;
+                intID = (Integer) id;
             else
                 intID = Integer.valueOf(id.toString());
 //            return cache.edge().get(intID);
@@ -192,88 +208,106 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
         }
         return null;
     }
+
     @Override
     public void removeEdge(Edge edge) {
         // TODO: queue W-B
         checkNotNull(edge);
-        XEdgeProxy e = (XEdgeProxy)edge;
+        XEdgeProxy e = (XEdgeProxy) edge;
         // TODO: remove from indices
 //        cache.edge().remove(e.key());
     }
+
     @Override
     public Iterable<Edge> getEdges() {
         //return new CovariantIterable<Edge>(newArrayList(cache.edge().list()));
         return Collections.emptyList();
     }
+
     @Override
     public Iterable<Edge> getEdges(String key, Object value) {
         // TODO: use indices
         return new PropertyFilteredIterable<>(key, value, this.getEdges());
     }
+
     // =================================
     @Override
     public GraphQuery query() {
         return null;
     }
+
     public void begin() {
 
     }
+
     // =================================
     @Override
     public void shutdown() {
         // commit...
     }
+
     @Override
     public void commit() {
         tx().clear();
     }
+
     @Override
     public void rollback() {
         tx().clear();
     }
+
     @Deprecated
     @Override
     public void stopTransaction(Conclusion conclusion) {
     }
+
     // =================================
     // Index is an external structure, independent of vertices/edges.
     @Override
     public <T extends Element> Index<T> createIndex(String indexName, Class<T> indexClass, Parameter[] indexParameters) {
         return null;
     }
+
     @Override
     public <T extends Element> Index<T> getIndex(String indexName, Class<T> indexClass) {
         return null;
     }
+
     @Override
     public Iterable<Index<? extends Element>> getIndices() {
         return null;
     }
+
     @Override
     public void dropIndex(String indexName) {
 
     }
+
     // KeyIndex add index to existing key/value properties
     @Override
     public <T extends Element> void dropKeyIndex(String key, Class<T> elementClass) {
 
     }
+
     @Override
     public <T extends Element> void createKeyIndex(String key, Class<T> elementClass, Parameter[] indexParameters) {
 
     }
+
     @Override
     public <T extends Element> Set<String> getIndexedKeys(Class<T> elementClass) {
         return null;
     }
+
     // =================================
     public String toString() {
 //        return StringFactory.graphString(this, "vertices:" + vertex.size() + " edges:" + edge.size());
         return StringFactory.graphString(this, "foo");
     }
+
     // =================================
-    private final AtomicLong vertexCounter = new AtomicLong();
-    private final AtomicLong edgeCounter = new AtomicLong();
+    private final AtomicInteger vertexCounter = new AtomicInteger();
+    private final AtomicInteger edgeCounter = new AtomicInteger();
 
 
 }

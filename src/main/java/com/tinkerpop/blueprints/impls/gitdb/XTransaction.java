@@ -1,6 +1,8 @@
 // CLASSIFICATION NOTICE: This file is UNCLASSIFIED
 package com.tinkerpop.blueprints.impls.gitdb;
 
+import static com.google.common.base.Predicates.in;
+import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Maps.newHashMap;
 import static com.google.common.collect.Sets.newHashSet;
 import static com.tinkerpop.blueprints.impls.gitdb.StringUtil.vertexKey;
@@ -9,6 +11,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.Iterators;
 import com.tinkerpop.blueprints.impls.gitdb.XVertexProxy.XVertex;
 import com.tinkerpop.blueprints.impls.gitdb.XEdgeProxy.XEdge;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +22,8 @@ public class XTransaction {
         baseline = baselineOID;
     }
 
+
+    // =================================
     void clear() {
         addedVertices.clear();
         deletedVertices.clear();
@@ -29,10 +34,12 @@ public class XTransaction {
         addedVertices.put(v.key(), v);
         return v;
     }
-    void removeVertex(long id) {
+
+    void removeVertex(int id) {
         addedVertices.remove(id);
         deletedVertices.add(id);
     }
+
     XVertex mutateVertex(final XVertex v) {
         if (deletedVertices.contains(v.key()))
             throw ExceptionFactory.vertexDeleted(v.key());
@@ -43,27 +50,65 @@ public class XTransaction {
         }
         return xv;
     }
-    XVertex getVertex(long id) throws XCache.NotFoundException {
+
+    XVertex getVertex(int id) throws XCache.NotFoundException {
         if (deletedVertices.contains(id)) {
             return null;
         }
         XVertex v = addedVertices.get(id);
         if (null == v) {
-            // pull from baseline cache
+            log.error("TODO: pull from baseline");
         }
         return v;
     }
-//    Iterator<Long> getVertices() {
-//        return addedVertices.keySet().iterator();
-//    }
-//    // =================================
-//    void dump() {
-//        log.info("Transaction (baseline {})", baseline);
-//        log.info("Added vertices");
-//        for (Map.Entry<Long, XVertex> e : addedVertices.entrySet()) {
-//            log.info("{} => {}", e.getKey(), e.getValue());
-//        }
-//    }
+
+    XVertex getMutableVertex(int id) throws XCache.NotFoundException {
+        if (deletedVertices.contains(id)) {
+            return null;
+        }
+        XVertex v = addedVertices.get(id);
+        if (null == v) {
+            log.error("TODO: pull from baseline");
+        }
+        return v;
+    }
+
+    Iterator<Integer> getVertices() {
+        // pull from baseline
+        Iterator<Integer> it = Iterators.filter(addedVertices.keySet().iterator(), not(in(deletedVertices)));
+        return it;
+    }
+    // =================================
+    XEdge addEdge(final XEdge e) {
+        addedEdges.put(e.key(), e);
+        return e;
+    }
+
+    void removeEdge(int id) {
+        addedEdges.remove(id);
+        deletedEdges.add(id);
+    }
+    // =================================
+    void dump() {
+        if (!log.isInfoEnabled())
+            return;
+        log.info("Transaction {}", Thread.currentThread().getName());
+        log.info("== Nodes");
+        for (Map.Entry<Integer, XVertex> e : addedVertices.entrySet()) {
+            log.info("\t{} => {}", e.getKey(), e.getValue());
+        }
+        for (Integer id : deletedVertices) {
+            log.info("\tX {}", id);
+        }
+        log.info("== Edges");
+        for (Map.Entry<Integer, XEdge> e : addedEdges.entrySet()) {
+            log.info("\t{} => {}", e.getKey(), e.getValue());
+        }
+        for (Integer id : deletedEdges) {
+            log.info("\tX {}", id);
+        }
+
+    }
     // =================================
 
 //    private Map<Long, XVertex> addedEdges = newHashMap();
@@ -86,11 +131,11 @@ public class XTransaction {
 //    }
 //    private Map<Long, XVertex> z = foo();
 
-    private Map<Long, XVertex> addedVertices = newHashMap();
-    private Set<Long> deletedVertices = newHashSet();
+    private Map<Integer, XVertex> addedVertices = newHashMap();
+    private Set<Integer> deletedVertices = newHashSet();
 
-    private Map<Long, XEdge> addedEdges = newHashMap();
-    private Set<Long> deletedEdges = newHashSet();
+    private Map<Integer, XEdge> addedEdges = newHashMap();
+    private Set<Integer> deletedEdges = newHashSet();
 
     private final String baseline;
 

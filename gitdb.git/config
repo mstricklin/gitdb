@@ -1,7 +1,7 @@
 [core]
-	symlinks = false
 	repositoryformatversion = 0
 	filemode = true
-	bare = true
-	logallrefupdates = false
+	bare = false
+	logallrefupdates = true
+	ignorecase = true
 	precomposeunicode = true
