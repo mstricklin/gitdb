@@ -3,12 +3,10 @@ package edu.utexas.arlut.ciads.suite;
 import com.google.common.base.Stopwatch;
 import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.impls.GraphTest;
+import com.tinkerpop.blueprints.impls.gitdb.GitGraph;
 import com.tinkerpop.blueprints.util.StringFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestName;
 
 import java.io.File;
@@ -16,67 +14,41 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.google.common.collect.Iterables.size;
+import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.collect.Sets.newHashSet;
+import static com.google.common.collect.Sets.newHashSetWithExpectedSize;
 import static com.tinkerpop.blueprints.Direction.BOTH;
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
 
-import static edu.utexas.arlut.ciads.suite.GraphUtil.deleteDirectory;
-import static edu.utexas.arlut.ciads.suite.GraphUtil.convertId;
-import static edu.utexas.arlut.ciads.suite.GraphUtil.convertLabel;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @Slf4j
 public class VertexTestSuite extends TestSuite {
 
-    @Rule
-    public TestName name = new TestName();
-    @Rule
-    public Stopwatch sw = Stopwatch.createUnstarted();
-    @Rule
-    public String workingDir = computeTestDataRoot().getAbsolutePath();
-
-    private Graph graph;
-
-    @Before
-    public void before() {
-        deleteDirectory(new File(workingDir));
-        log.info("Testing {}...", name.getMethodName());
-        graph = graphTest.generateGraph();
-    }
-
-    @After
-    public void after() {
-        graph.shutdown();
-        sw.stop();
-        log.info("*** TOTAL TIME [{}]: {} ***", name.getMethodName(), sw.toString());
-        deleteDirectory(new File(workingDir));
-    }
-
-    public VertexTestSuite() {
-    }
-
-    public VertexTestSuite(final GraphTest graphTest) {
-        super(graphTest);
-    }
 
     @Test
     public void testVertexEquality() {
         if (!graph.getFeatures().ignoresSuppliedIds) {
             Vertex v = graph.addVertex(convertId("1"));
             Vertex u = graph.getVertex(convertId("1"));
-            assertEquals(v, u);
+            Assert.assertEquals(v, u);
         }
 
-        this.stopWatch();
-        Vertex v = graph.addVertex(null);
-        assertNotNull(v);
-        Vertex u = graph.getVertex(v.getId());
-        assertNotNull(u);
-        assertEquals(v, u);
-        printPerformance(graph.toString(), 1, "vertex added and retrieved", this.stopWatch());
+        sw.reset();
 
-        assertEquals(graph.getVertex(u.getId()), graph.getVertex(u.getId()));
-        assertEquals(graph.getVertex(v.getId()), graph.getVertex(u.getId()));
-        assertEquals(graph.getVertex(v.getId()), graph.getVertex(v.getId()));
+        resetAndStart();
+        Vertex v = graph.addVertex(null);
+        Assert.assertNotNull(v);
+        Vertex u = graph.getVertex(v.getId());
+        Assert.assertNotNull(u);
+        Assert.assertEquals(v, u);
+        printPerformance(graph.toString(), 1, "vertex added and retrieved");
+
+        Assert.assertEquals(graph.getVertex(u.getId()), graph.getVertex(u.getId()));
+        Assert.assertEquals(graph.getVertex(v.getId()), graph.getVertex(u.getId()));
+        Assert.assertEquals(graph.getVertex(v.getId()), graph.getVertex(v.getId()));
     }
 
     @Test
@@ -94,8 +66,8 @@ public class VertexTestSuite extends TestSuite {
             set.add(graph.getVertex(convertId("1")));
             if (graph.getFeatures().supportsVertexIndex)
                 set.add(graph.getVertices().iterator().next());
-            assertEquals(1, set.size());
-            assertEquals(v.hashCode(), u.hashCode());
+            Assert.assertEquals(1, set.size());
+            Assert.assertEquals(v.hashCode(), u.hashCode());
         }
     }
 
@@ -104,18 +76,18 @@ public class VertexTestSuite extends TestSuite {
         if (graph.getFeatures().supportsVertexIteration) {
             graph.addVertex(convertId("1"));
             graph.addVertex(convertId("2"));
-            assertEquals(2, count(graph.getVertices()));
+            Assert.assertEquals(2, size(graph.getVertices()));
             graph.addVertex(convertId("3"));
-            assertEquals(3, count(graph.getVertices()));
+            Assert.assertEquals(3, size(graph.getVertices()));
         }
     }
     @Test
     public void testGetVertexWithNull() {
         try {
             graph.getVertex(null);
-            assertFalse(true);
+            Assert.assertFalse(true);
         } catch (IllegalArgumentException e) {
-            assertTrue(true);
+            Assert.assertTrue(true);
         }
     }
     @Test
@@ -123,36 +95,36 @@ public class VertexTestSuite extends TestSuite {
 
         Vertex v1 = graph.addVertex(convertId("1"));
         if (!graph.getFeatures().ignoresSuppliedIds)
-            assertEquals(graph.getVertex(convertId("1")), v1);
+            Assert.assertEquals(graph.getVertex(convertId("1")), v1);
 
         if (graph.getFeatures().supportsVertexIteration)
-            assertEquals(1, count(graph.getVertices()));
+            Assert.assertEquals(1, size(graph.getVertices()));
         if (graph.getFeatures().supportsEdgeIteration)
-            assertEquals(0, count(graph.getEdges()));
+            Assert.assertEquals(0, size(graph.getEdges()));
 
         graph.removeVertex(v1);
         if (graph.getFeatures().supportsVertexIteration)
-            assertEquals(0, count(graph.getVertices()));
+            Assert.assertEquals(0, size(graph.getVertices()));
         if (graph.getFeatures().supportsEdgeIteration)
-            assertEquals(0, count(graph.getEdges()));
+            Assert.assertEquals(0, size(graph.getEdges()));
 
         Set<Vertex> vertices = new HashSet<Vertex>();
         for (int i = 0; i < 100; i++) {
             vertices.add(graph.addVertex(null));
         }
-        assertEquals(vertices.size(), 100);
+        Assert.assertEquals(vertices.size(), 100);
         if (graph.getFeatures().supportsVertexIteration)
-            assertEquals(100, count(graph.getVertices()));
+            Assert.assertEquals(100, size(graph.getVertices()));
         if (graph.getFeatures().supportsEdgeIteration)
-            assertEquals(0, count(graph.getEdges()));
+            Assert.assertEquals(0, size(graph.getEdges()));
 
         for (Vertex v : vertices) {
             graph.removeVertex(v);
         }
         if (graph.getFeatures().supportsVertexIteration)
-            assertEquals(0, count(graph.getVertices()));
+            Assert.assertEquals(0, size(graph.getVertices()));
         if (graph.getFeatures().supportsEdgeIteration)
-            assertEquals(0, count(graph.getEdges()));
+            Assert.assertEquals(0, size(graph.getEdges()));
 
     }
     @Test
@@ -161,72 +133,72 @@ public class VertexTestSuite extends TestSuite {
         Vertex v2 = graph.addVertex(convertId("2"));
         graph.addEdge(null, v1, v2, convertLabel("knows"));
         if (graph.getFeatures().supportsVertexIteration)
-            assertEquals(2, count(graph.getVertices()));
+            Assert.assertEquals(2, size(graph.getVertices()));
         if (graph.getFeatures().supportsEdgeIteration)
-            assertEquals(1, count(graph.getEdges()));
+            Assert.assertEquals(1, size(graph.getEdges()));
 
         graph.removeVertex(v1);
         if (graph.getFeatures().supportsVertexIteration)
-            assertEquals(1, count(graph.getVertices()));
+            Assert.assertEquals(1, size(graph.getVertices()));
         if (graph.getFeatures().supportsEdgeIteration)
-            assertEquals(0, count(graph.getEdges()));
+            Assert.assertEquals(0, size(graph.getEdges()));
 
         graph.removeVertex(v2);
         if (graph.getFeatures().supportsVertexIteration)
-            assertEquals(0, count(graph.getVertices()));
+            Assert.assertEquals(0, size(graph.getVertices()));
         if (graph.getFeatures().supportsEdgeIteration)
-            assertEquals(0, count(graph.getEdges()));
+            Assert.assertEquals(0, size(graph.getEdges()));
 
     }
     @Test
     public void testGetNonExistantVertices() {
-        assertNull(graph.getVertex("asbv"));
-        assertNull(graph.getVertex(12.0d));
+        Assert.assertNull(graph.getVertex("asbv"));
+        Assert.assertNull(graph.getVertex(12.0d));
     }
     @Test
     public void testRemoveVertexNullId() {
 
         Vertex v1 = graph.addVertex(null);
         if (graph.getFeatures().supportsVertexIteration)
-            assertEquals(1, count(graph.getVertices()));
+            Assert.assertEquals(1, size(graph.getVertices()));
         graph.removeVertex(v1);
         if (graph.getFeatures().supportsVertexIteration)
-            assertEquals(0, count(graph.getVertices()));
+            Assert.assertEquals(0, size(graph.getVertices()));
 
         Set<Vertex> vertices = new HashSet<Vertex>();
 
-        this.stopWatch();
+        resetAndStart();
         int vertexCount = 100;
         for (int i = 0; i < vertexCount; i++) {
             vertices.add(graph.addVertex(null));
         }
-        printPerformance(graph.toString(), vertexCount, "vertices added", this.stopWatch());
+        printPerformance(graph.toString(), vertexCount, "vertices added");
         if (graph.getFeatures().supportsVertexIteration)
-            assertEquals(vertexCount, count(graph.getVertices()));
+            Assert.assertEquals(vertexCount, size(graph.getVertices()));
 
-        this.stopWatch();
+        resetAndStart();
         for (Vertex v : vertices) {
             graph.removeVertex(v);
         }
-        printPerformance(graph.toString(), vertexCount, "vertices removed", this.stopWatch());
+        printPerformance(graph.toString(), vertexCount, "vertices removed");
         if (graph.getFeatures().supportsVertexIteration)
-            assertEquals(0, count(graph.getVertices()));
+            Assert.assertEquals(0, size(graph.getVertices()));
     }
     @Test
     public void testVertexIterator() {
         if (graph.getFeatures().supportsVertexIteration) {
-            this.stopWatch();
+            resetAndStart();
             int vertexCount = 1000;
-            Set ids = new HashSet(1000);
+            Set<Integer> ids = newHashSetWithExpectedSize(1000);
             for (int i = 0; i < vertexCount; i++) {
-                ids.add(graph.addVertex(null).getId());
+                ids.add((Integer)graph.addVertex(null).getId());
             }
-            printPerformance(graph.toString(), vertexCount, "vertices added", this.stopWatch());
-            this.stopWatch();
-            assertEquals(vertexCount, count(graph.getVertices()));
-            printPerformance(graph.toString(), vertexCount, "vertices counted", this.stopWatch());
+            printPerformance(graph.toString(), vertexCount, "vertices added");
+            resetAndStart();
+            Assert.assertEquals(vertexCount, size(graph.getVertices()));
+            printPerformance(graph.toString(), vertexCount, "vertices counted");
             // must create unique ids
-            assertEquals(vertexCount, ids.size());
+            Assert.assertEquals(vertexCount, ids.size());
         }
     }
     @Test
@@ -236,9 +208,9 @@ public class VertexTestSuite extends TestSuite {
             graph.addEdge(null, v1, graph.addVertex(null), convertLabel("knows"));
         }
         Iterable<Edge> edges = v1.getEdges(Direction.OUT, convertLabel("knows"));
-        assertEquals(count(edges), 10);
-        assertEquals(count(edges), 10);
-        assertEquals(count(edges), 10);
+        Assert.assertEquals(size(edges), 10);
+        Assert.assertEquals(size(edges), 10);
+        Assert.assertEquals(size(edges), 10);
     }
     @Test
     public void testAddVertexProperties() {
@@ -248,15 +220,15 @@ public class VertexTestSuite extends TestSuite {
 
             if (graph.getFeatures().supportsStringProperty) {
                 v1.setProperty("key1", "value1");
-                assertEquals("value1", v1.getProperty("key1"));
+                Assert.assertEquals("value1", v1.getProperty("key1"));
             }
 
             if (graph.getFeatures().supportsIntegerProperty) {
                 v1.setProperty("key2", 10);
                 v2.setProperty("key2", 20);
 
-                assertEquals(10, v1.getProperty("key2"));
-                assertEquals(20, v2.getProperty("key2"));
+                Assert.assertEquals(10, v1.getProperty("key2"));
+                Assert.assertEquals(20, v2.getProperty("key2"));
             }
 
         }
@@ -265,8 +237,8 @@ public class VertexTestSuite extends TestSuite {
     @Test
     public void testAddManyVertexProperties() {
         if (graph.getFeatures().supportsVertexProperties && graph.getFeatures().supportsStringProperty) {
-            Set<Vertex> vertices = new HashSet<Vertex>();
-            this.stopWatch();
+            Set<Vertex> vertices = newHashSet();
+            resetAndStart();
             for (int i = 0; i < 50; i++) {
                 Vertex vertex = graph.addVertex(null);
                 for (int j = 0; j < 15; j++) {
@@ -274,13 +246,13 @@ public class VertexTestSuite extends TestSuite {
                 }
                 vertices.add(vertex);
             }
-            printPerformance(graph.toString(), 15 * 50, "vertex properties added (with vertices being added too)", this.stopWatch());
+            printPerformance(graph.toString(), 15 * 50, "vertex properties added (with vertices being added too)");
 
             if (graph.getFeatures().supportsVertexIteration)
-                assertEquals(50, count(graph.getVertices()));
-            assertEquals(50, vertices.size());
+                Assert.assertEquals(50, size(graph.getVertices()));
+            Assert.assertEquals(50, vertices.size());
             for (Vertex vertex : vertices) {
-                assertEquals(15, vertex.getPropertyKeys().size());
+                Assert.assertEquals(15, vertex.getPropertyKeys().size());
             }
         }
     }
@@ -292,26 +264,26 @@ public class VertexTestSuite extends TestSuite {
             Vertex v1 = graph.addVertex("1");
             Vertex v2 = graph.addVertex("2");
 
-            assertNull(v1.removeProperty("key1"));
-            assertNull(v1.removeProperty("key2"));
-            assertNull(v2.removeProperty("key2"));
+            Assert.assertNull(v1.removeProperty("key1"));
+            Assert.assertNull(v1.removeProperty("key2"));
+            Assert.assertNull(v2.removeProperty("key2"));
 
             if (graph.getFeatures().supportsStringProperty) {
                 v1.setProperty("key1", "value1");
-                assertEquals("value1", v1.removeProperty("key1"));
+                Assert.assertEquals("value1", v1.removeProperty("key1"));
             }
 
             if (graph.getFeatures().supportsIntegerProperty) {
                 v1.setProperty("key2", 10);
                 v2.setProperty("key2", 20);
 
-                assertEquals(10, v1.removeProperty("key2"));
-                assertEquals(20, v2.removeProperty("key2"));
+                Assert.assertEquals(10, v1.removeProperty("key2"));
+                Assert.assertEquals(20, v2.removeProperty("key2"));
             }
 
-            assertNull(v1.removeProperty("key1"));
-            assertNull(v1.removeProperty("key2"));
-            assertNull(v2.removeProperty("key2"));
+            Assert.assertNull(v1.removeProperty("key1"));
+            Assert.assertNull(v1.removeProperty("key2"));
+            Assert.assertNull(v2.removeProperty("key2"));
 
             if (graph.getFeatures().supportsStringProperty) {
                 v1.setProperty("key1", "value1");
@@ -327,37 +299,37 @@ public class VertexTestSuite extends TestSuite {
                 v2 = graph.getVertex("2");
 
                 if (graph.getFeatures().supportsStringProperty) {
-                    assertEquals("value1", v1.removeProperty("key1"));
+                    Assert.assertEquals("value1", v1.removeProperty("key1"));
                 }
 
                 if (graph.getFeatures().supportsIntegerProperty) {
-                    assertEquals(10, v1.removeProperty("key2"));
-                    assertEquals(20, v2.removeProperty("key2"));
+                    Assert.assertEquals(10, v1.removeProperty("key2"));
+                    Assert.assertEquals(20, v2.removeProperty("key2"));
                 }
 
-                assertNull(v1.removeProperty("key1"));
-                assertNull(v1.removeProperty("key2"));
-                assertNull(v2.removeProperty("key2"));
+                Assert.assertNull(v1.removeProperty("key1"));
+                Assert.assertNull(v1.removeProperty("key2"));
+                Assert.assertNull(v2.removeProperty("key2"));
 
                 v1 = graph.getVertex("1");
                 v2 = graph.getVertex("2");
 
                 if (graph.getFeatures().supportsStringProperty) {
                     v1.setProperty("key1", "value2");
-                    assertEquals("value2", v1.removeProperty("key1"));
+                    Assert.assertEquals("value2", v1.removeProperty("key1"));
                 }
 
                 if (graph.getFeatures().supportsIntegerProperty) {
                     v1.setProperty("key2", 20);
                     v2.setProperty("key2", 30);
 
-                    assertEquals(20, v1.removeProperty("key2"));
-                    assertEquals(30, v2.removeProperty("key2"));
+                    Assert.assertEquals(20, v1.removeProperty("key2"));
+                    Assert.assertEquals(30, v2.removeProperty("key2"));
                 }
 
-                assertNull(v1.removeProperty("key1"));
-                assertNull(v1.removeProperty("key2"));
-                assertNull(v2.removeProperty("key2"));
+                Assert.assertNull(v1.removeProperty("key1"));
+                Assert.assertNull(v1.removeProperty("key2"));
+                Assert.assertNull(v2.removeProperty("key2"));
             }
         }
     }
@@ -368,9 +340,9 @@ public class VertexTestSuite extends TestSuite {
             Vertex vertex = graph.addVertex(null);
             try {
                 vertex.setProperty("id", "123");
-                assertTrue(false);
+                Assert.assertTrue(false);
             } catch (IllegalArgumentException e) {
-                assertTrue(true);
+                Assert.assertTrue(true);
             }
         }
     }
@@ -383,11 +355,11 @@ public class VertexTestSuite extends TestSuite {
             for (int i = 0; i < 25; i++) {
                 graph.addVertex(null);
             }
-            assertEquals(count(graph.getVertices()), 25);
+            Assert.assertEquals(size(graph.getVertices()), 25);
             for (final Vertex vertex : graph.getVertices()) {
                 graph.removeVertex(vertex);
             }
-            assertEquals(count(graph.getVertices()), 0);
+            Assert.assertEquals(size(graph.getVertices()), 0);
         }
     }
 
@@ -402,64 +374,64 @@ public class VertexTestSuite extends TestSuite {
         Edge z = graph.addEdge(null, a, b, convertLabel("hates"));
         Edge zz = graph.addEdge(null, c, c, convertLabel("hates"));
 
-        assertEquals(count(a.getEdges(OUT)), 3);
-        assertEquals(count(a.getEdges(OUT, convertLabel("hates"))), 2);
-        assertEquals(count(a.getEdges(OUT, convertLabel("knows"))), 1);
-        assertEquals(count(a.getVertices(OUT)), 3);
-        assertEquals(count(a.getVertices(OUT, convertLabel("hates"))), 2);
-        assertEquals(count(a.getVertices(OUT, convertLabel("knows"))), 1);
-        assertEquals(count(a.getVertices(BOTH)), 3);
-        assertEquals(count(a.getVertices(BOTH, convertLabel("hates"))), 2);
-        assertEquals(count(a.getVertices(BOTH, convertLabel("knows"))), 1);
+        Assert.assertEquals(size(a.getEdges(OUT)), 3);
+        Assert.assertEquals(size(a.getEdges(OUT, convertLabel("hates"))), 2);
+        Assert.assertEquals(size(a.getEdges(OUT, convertLabel("knows"))), 1);
+        Assert.assertEquals(size(a.getVertices(OUT)), 3);
+        Assert.assertEquals(size(a.getVertices(OUT, convertLabel("hates"))), 2);
+        Assert.assertEquals(size(a.getVertices(OUT, convertLabel("knows"))), 1);
+        Assert.assertEquals(size(a.getVertices(BOTH)), 3);
+        Assert.assertEquals(size(a.getVertices(BOTH, convertLabel("hates"))), 2);
+        Assert.assertEquals(size(a.getVertices(BOTH, convertLabel("knows"))), 1);
 
-        assertTrue(asList(a.getEdges(OUT)).contains(w));
-        assertTrue(asList(a.getEdges(OUT)).contains(y));
-        assertTrue(asList(a.getEdges(OUT)).contains(z));
-        assertTrue(asList(a.getVertices(OUT)).contains(b));
-        assertTrue(asList(a.getVertices(OUT)).contains(c));
+        Assert.assertTrue(newArrayList(a.getEdges(OUT)).contains(w));
+        Assert.assertTrue(newArrayList(a.getEdges(OUT)).contains(y));
+        Assert.assertTrue(newArrayList(a.getEdges(OUT)).contains(z));
+        Assert.assertTrue(newArrayList(a.getVertices(OUT)).contains(b));
+        Assert.assertTrue(newArrayList(a.getVertices(OUT)).contains(c));
 
-        assertTrue(asList(a.getEdges(OUT, convertLabel("knows"))).contains(w));
-        assertFalse(asList(a.getEdges(OUT, convertLabel("knows"))).contains(y));
-        assertFalse(asList(a.getEdges(OUT, convertLabel("knows"))).contains(z));
-        assertTrue(asList(a.getVertices(OUT, convertLabel("knows"))).contains(b));
-        assertFalse(asList(a.getVertices(OUT, convertLabel("knows"))).contains(c));
+        Assert.assertTrue(newArrayList(a.getEdges(OUT, convertLabel("knows"))).contains(w));
+        Assert.assertFalse(newArrayList(a.getEdges(OUT, convertLabel("knows"))).contains(y));
+        Assert.assertFalse(newArrayList(a.getEdges(OUT, convertLabel("knows"))).contains(z));
+        Assert.assertTrue(newArrayList(a.getVertices(OUT, convertLabel("knows"))).contains(b));
+        Assert.assertFalse(newArrayList(a.getVertices(OUT, convertLabel("knows"))).contains(c));
 
-        assertFalse(asList(a.getEdges(OUT, convertLabel("hates"))).contains(w));
-        assertTrue(asList(a.getEdges(OUT, convertLabel("hates"))).contains(y));
-        assertTrue(asList(a.getEdges(OUT, convertLabel("hates"))).contains(z));
-        assertTrue(asList(a.getVertices(OUT, convertLabel("hates"))).contains(b));
-        assertTrue(asList(a.getVertices(OUT, convertLabel("hates"))).contains(c));
+        Assert.assertFalse(newArrayList(a.getEdges(OUT, convertLabel("hates"))).contains(w));
+        Assert.assertTrue(newArrayList(a.getEdges(OUT, convertLabel("hates"))).contains(y));
+        Assert.assertTrue(newArrayList(a.getEdges(OUT, convertLabel("hates"))).contains(z));
+        Assert.assertTrue(newArrayList(a.getVertices(OUT, convertLabel("hates"))).contains(b));
+        Assert.assertTrue(newArrayList(a.getVertices(OUT, convertLabel("hates"))).contains(c));
 
-        assertEquals(count(a.getVertices(IN)), 0);
-        assertEquals(count(a.getVertices(IN, convertLabel("knows"))), 0);
-        assertEquals(count(a.getVertices(IN, convertLabel("hates"))), 0);
-        assertTrue(asList(a.getEdges(OUT)).contains(w));
-        assertTrue(asList(a.getEdges(OUT)).contains(y));
-        assertTrue(asList(a.getEdges(OUT)).contains(z));
+        Assert.assertEquals(size(a.getVertices(IN)), 0);
+        Assert.assertEquals(size(a.getVertices(IN, convertLabel("knows"))), 0);
+        Assert.assertEquals(size(a.getVertices(IN, convertLabel("hates"))), 0);
+        Assert.assertTrue(newArrayList(a.getEdges(OUT)).contains(w));
+        Assert.assertTrue(newArrayList(a.getEdges(OUT)).contains(y));
+        Assert.assertTrue(newArrayList(a.getEdges(OUT)).contains(z));
 
-        assertEquals(count(b.getEdges(BOTH)), 3);
-        assertEquals(count(b.getEdges(BOTH, convertLabel("knows"))), 2);
-        assertTrue(asList(b.getEdges(BOTH, convertLabel("knows"))).contains(x));
-        assertTrue(asList(b.getEdges(BOTH, convertLabel("knows"))).contains(w));
-        assertTrue(asList(b.getVertices(BOTH, convertLabel("knows"))).contains(a));
-        assertTrue(asList(b.getVertices(BOTH, convertLabel("knows"))).contains(c));
+        Assert.assertEquals(size(b.getEdges(BOTH)), 3);
+        Assert.assertEquals(size(b.getEdges(BOTH, convertLabel("knows"))), 2);
+        Assert.assertTrue(newArrayList(b.getEdges(BOTH, convertLabel("knows"))).contains(x));
+        Assert.assertTrue(newArrayList(b.getEdges(BOTH, convertLabel("knows"))).contains(w));
+        Assert.assertTrue(newArrayList(b.getVertices(BOTH, convertLabel("knows"))).contains(a));
+        Assert.assertTrue(newArrayList(b.getVertices(BOTH, convertLabel("knows"))).contains(c));
 
-        assertEquals(count(c.getEdges(BOTH, convertLabel("hates"))), 3);
-        assertEquals(count(c.getVertices(BOTH, convertLabel("hates"))), 3);
-        assertEquals(count(c.getEdges(BOTH, convertLabel("knows"))), 1);
-        assertTrue(asList(c.getEdges(BOTH, convertLabel("hates"))).contains(y));
-        assertTrue(asList(c.getEdges(BOTH, convertLabel("hates"))).contains(zz));
-        assertTrue(asList(c.getVertices(BOTH, convertLabel("hates"))).contains(a));
-        assertTrue(asList(c.getVertices(BOTH, convertLabel("hates"))).contains(c));
-        assertEquals(count(c.getEdges(IN, convertLabel("hates"))), 2);
-        assertEquals(count(c.getEdges(OUT, convertLabel("hates"))), 1);
+        Assert.assertEquals(size(c.getEdges(BOTH, convertLabel("hates"))), 3);
+        Assert.assertEquals(size(c.getVertices(BOTH, convertLabel("hates"))), 3);
+        Assert.assertEquals(size(c.getEdges(BOTH, convertLabel("knows"))), 1);
+        Assert.assertTrue(newArrayList(c.getEdges(BOTH, convertLabel("hates"))).contains(y));
+        Assert.assertTrue(newArrayList(c.getEdges(BOTH, convertLabel("hates"))).contains(zz));
+        Assert.assertTrue(newArrayList(c.getVertices(BOTH, convertLabel("hates"))).contains(a));
+        Assert.assertTrue(newArrayList(c.getVertices(BOTH, convertLabel("hates"))).contains(c));
+        Assert.assertEquals(size(c.getEdges(IN, convertLabel("hates"))), 2);
+        Assert.assertEquals(size(c.getEdges(OUT, convertLabel("hates"))), 1);
 
         try {
             x.getVertex(BOTH);
-            fail("Getting edge vertex with direction BOTH should fail");
+            Assert.fail("Getting edge vertex with direction BOTH should fail");
         } catch (IllegalArgumentException e) {
         } catch (Exception e) {
-            fail("Getting edge vertex with direction BOTH should should throw " +
+            Assert.fail("Getting edge vertex with direction BOTH should should throw " +
                     IllegalArgumentException.class.getSimpleName());
         }
 
@@ -474,7 +446,7 @@ public class VertexTestSuite extends TestSuite {
             final Vertex v = graph.addVertex(null);
             try {
                 v.setProperty("", "value");
-                fail("Setting a vertex property with an empty string key should fail");
+                Assert.fail("Setting a vertex property with an empty string key should fail");
             } catch (IllegalArgumentException e) {
             }
         }
@@ -491,16 +463,16 @@ public class VertexTestSuite extends TestSuite {
         v.addEdge(convertLabel("knows"), b);
 
         if (graph.getFeatures().supportsVertexIteration)
-            assertEquals(count(graph.getVertices()), 3);
+            Assert.assertEquals(size(graph.getVertices()), 3);
         if (graph.getFeatures().supportsEdgeIteration)
-            assertEquals(count(graph.getEdges()), 2);
+            Assert.assertEquals(size(graph.getEdges()), 2);
 
-        assertEquals(count(v.getEdges(OUT, convertLabel("knows"))), 2);
-        assertEquals(count(a.getEdges(OUT, convertLabel("knows"))), 0);
-        assertEquals(count(a.getEdges(IN, convertLabel("knows"))), 1);
+        Assert.assertEquals(size(v.getEdges(OUT, convertLabel("knows"))), 2);
+        Assert.assertEquals(size(a.getEdges(OUT, convertLabel("knows"))), 0);
+        Assert.assertEquals(size(a.getEdges(IN, convertLabel("knows"))), 1);
 
-        assertEquals(count(b.getEdges(OUT, convertLabel("knows"))), 0);
-        assertEquals(count(b.getEdges(IN, convertLabel("knows"))), 1);
+        Assert.assertEquals(size(b.getEdges(OUT, convertLabel("knows"))), 0);
+        Assert.assertEquals(size(b.getEdges(IN, convertLabel("knows"))), 1);
 
     }
 
@@ -514,15 +486,15 @@ public class VertexTestSuite extends TestSuite {
         Object cId = c.getId();
 
         if (graph.getFeatures().supportsVertexIteration)
-            assertEquals(count(graph.getVertices()), 3);
+            Assert.assertEquals(size(graph.getVertices()), 3);
 
         a.remove();
         b.remove();
 
-        assertNotNull(graph.getVertex(cId));
+        Assert.assertNotNull(graph.getVertex(cId));
 
         if (graph.getFeatures().supportsVertexIteration)
-            assertEquals(count(graph.getVertices()), 1);
+            Assert.assertEquals(size(graph.getVertices()), 1);
 
 
     }
@@ -547,27 +519,27 @@ public class VertexTestSuite extends TestSuite {
             Vertex v = graph.addVertex(null);
             try {
                 v.setProperty(null, -1);
-                assertFalse(true);
+                Assert.assertFalse(true);
             } catch (RuntimeException e) {
-                assertTrue(true);
+                Assert.assertTrue(true);
             }
             try {
                 v.setProperty("", -1);
-                assertFalse(true);
+                Assert.assertFalse(true);
             } catch (RuntimeException e) {
-                assertTrue(true);
+                Assert.assertTrue(true);
             }
             try {
                 v.setProperty(StringFactory.ID, -1);
-                assertFalse(true);
+                Assert.assertFalse(true);
             } catch (RuntimeException e) {
-                assertTrue(true);
+                Assert.assertTrue(true);
             }
             try {
                 v.setProperty("good", null);
-                assertFalse(true);
+                Assert.assertFalse(true);
             } catch (RuntimeException e) {
-                assertTrue(true);
+                Assert.assertTrue(true);
             }
         }
     }

@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.tinkerpop.blueprints.impls.gitdb.XVertexProxy.XVertex;
 import com.tinkerpop.blueprints.impls.gitdb.XEdgeProxy.XEdge;
@@ -40,19 +41,9 @@ public class XTransaction {
         deletedVertices.add(id);
     }
 
-    XVertex mutateVertex(final XVertex v) {
-        if (deletedVertices.contains(v.key()))
-            throw ExceptionFactory.vertexDeleted(v.key());
-        XVertex xv = addedVertices.get(v.key());
-        if (null == xv) {
-            xv = new XVertex(v);
-            addedVertices.put(xv.key(), xv);
-        }
-        return xv;
-    }
-
     XVertex getVertex(int id) throws XCache.NotFoundException {
         if (deletedVertices.contains(id)) {
+            // TODO: throw?
             return null;
         }
         XVertex v = addedVertices.get(id);
@@ -64,6 +55,7 @@ public class XTransaction {
 
     XVertex getMutableVertex(int id) throws XCache.NotFoundException {
         if (deletedVertices.contains(id)) {
+            // TODO: throw?
             return null;
         }
         XVertex v = addedVertices.get(id);
@@ -73,10 +65,16 @@ public class XTransaction {
         return v;
     }
 
-    Iterator<Integer> getVertices() {
-        // pull from baseline
-        Iterator<Integer> it = Iterators.filter(addedVertices.keySet().iterator(), not(in(deletedVertices)));
-        return it;
+    Iterator<XVertex> getVertices() {
+        Predicate<XVertex> notDeletedP = new Predicate<XVertex>() {
+            @Override
+            public boolean apply(XVertex xv) {
+                return (! deletedVertices.contains(xv.key()) );
+            }
+        };
+        // TODO: pull from baseline
+        Iterator<XVertex> it0 = addedVertices.values().iterator();
+        return Iterators.filter(it0, notDeletedP);
     }
     // =================================
     XEdge addEdge(final XEdge e) {
@@ -87,6 +85,44 @@ public class XTransaction {
     void removeEdge(int id) {
         addedEdges.remove(id);
         deletedEdges.add(id);
+    }
+
+    XEdge getEdge(int id) throws XCache.NotFoundException {
+        if (deletedEdges.contains(id)) {
+            return null;
+        }
+        XEdge e = addedEdges.get(id);
+        if (null == e) {
+            log.error("TODO: pull from baseline");
+        }
+        return e;
+    }
+    XEdge getMutableEdge(int id) throws XCache.NotFoundException {
+        if (deletedEdges.contains(id)) {
+            return null;
+        }
+        XEdge e = addedEdges.get(id);
+        if (null == e) {
+            log.error("TODO: pull from baseline");
+        }
+        return e;
+    }
+
+    Iterator<XEdge> getEdges() {
+
+        Predicate<XEdge> notDeletedP = new Predicate<XEdge>() {
+            @Override
+            public boolean apply(XEdge xe) {
+                return (! deletedEdges.contains(xe.key()) );
+            }
+        };
+        // TODO: pull from baseline
+        Iterator<XEdge> it0 = addedEdges.values().iterator();
+        return Iterators.filter(it0, notDeletedP);
+
+        // pull from baseline
+//        Iterator<Integer> it = Iterators.filter(addedEdges.keySet().iterator(), not(in(deletedEdges)));
+//        return it;
     }
     // =================================
     void dump() {

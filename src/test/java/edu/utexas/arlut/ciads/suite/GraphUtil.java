@@ -1,16 +1,21 @@
 package edu.utexas.arlut.ciads.suite;
 
+import com.google.common.base.Stopwatch;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.util.Collection;
 
 import static com.google.common.collect.Iterables.size;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+@Slf4j
 public class GraphUtil {
+
 
     protected void vertexCount(final Graph graph, int expectedCount) {
         if (graph.getFeatures().supportsVertexIteration) assertEquals(size(graph.getVertices()), expectedCount);
@@ -28,13 +33,6 @@ public class GraphUtil {
         if (graph.getFeatures().supportsEdgeIteration) assertEquals(size(graph.getEdges()), expectedCount);
     }
 
-    public static Object convertId(final Object id) {
-        return id;
-    }
-
-    public static String convertLabel(final String label) {
-        return label;
-    }
 
     protected static void deleteDirectory(final File directory) {
         if (directory.exists()) {

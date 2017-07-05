@@ -8,14 +8,33 @@ import static com.tinkerpop.blueprints.impls.gitdb.XVertexProxy.*;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.Function;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class XEdgeProxy extends XElementProxy implements Edge {
+    public static Function<Integer, XEdge> lookupEdge(final GitGraph graph) {
+        return new Function<Integer, XEdge>() {
+            @Override
+            public XEdge apply(Integer id) {
+                return graph.tx().getEdge(id);
+            }
+        };
+    }
+    public static Function<XEdge, XEdgeProxy> makeEdge(final GitGraph graph) {
+        return new Function<XEdge, XEdgeProxy>() {
+            @Override
+            public XEdgeProxy apply(XEdge xe) {
+                return XEdgeProxy.of(xe, graph);
+            }
+        };
+    }
     public static XEdgeProxy of(final XEdge xe, final GitGraph gg) {
         return new XEdgeProxy(xe.key(), xe.outId, xe.inId, xe.label, gg);
     }
@@ -41,11 +60,13 @@ public class XEdgeProxy extends XElementProxy implements Edge {
     }
 
     XVertexProxy getOutVertex() {
-        return (XVertexProxy) graph.getVertex(outId);
+//        log.info("self: {}", this);
+        XEdge e = getImpl();
+        return XVertexProxy.of(getImpl().outId, graph);
     }
 
     XVertexProxy getInVertex() {
-        return (XVertexProxy) graph.getVertex(inId);
+        return XVertexProxy.of(getImpl().inId, graph);
     }
 
     public void remove() {
@@ -65,23 +86,25 @@ public class XEdgeProxy extends XElementProxy implements Edge {
 
     @Override
     protected XEdge getImpl() {
-        return null;
+        return graph.tx().getEdge(key());
     }
     @Override
     protected XEdge getMutableImpl() {
-        return null;
+        return graph.tx().getMutableEdge(key());
     }
 
     // =================================
     @ToString(callSuper = true)
     public static class XEdge extends XElement {
-        XEdge(final XEdge ie) {
-            super(ie);
-            this.outId = ie.outId;
-            this.inId = ie.inId;
-            this.label = ie.label;
+        private XEdge() {
+            this(-1, -1, -1, "");
         }
-
+        XEdge(final XEdge xe) {
+            super(xe);
+            this.outId = xe.outId;
+            this.inId = xe.inId;
+            this.label = xe.label;
+        }
         XEdge(int id, int outId, int inId, String label) {
             super(id);
             this.outId = outId;

@@ -99,6 +99,16 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
 
     }
 
+    public void dump() {
+        if (!log.isInfoEnabled())
+            return;
+        log.info(" === vertices ===");
+        for (Vertex v: getVertices())
+            log.info("\t{}", v);
+        log.info(" === edges ===");
+        for (Edge e: getEdges())
+            log.info("\t{}", e);
+    }
     public void txDump() {
         if (!log.isInfoEnabled())
             return;
@@ -126,7 +136,6 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
 
     @Override
     public Vertex getVertex(Object id) {
-        // TODO: add to indices
         if (null == id)
             throw ExceptionFactory.vertexIdCanNotBeNull();
         try {
@@ -138,7 +147,7 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
             else
                 intId = Double.valueOf(id.toString()).intValue();
             XVertex xv = tx().getVertex(intId);
-            return (null == xv) ? null : XVertexProxy.of(tx().getVertex(intId), this);
+            return (null == xv) ? null : XVertexProxy.of(xv, this);
         } catch (XCache.NotFoundException e) {
             log.error("could not find vertex by id {}", id);
         } catch (NumberFormatException e) {
@@ -152,8 +161,12 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
         // TODO: remove from indices
         try {
             checkNotNull(vertex);
-            for (Edge e : vertex.getEdges(Direction.BOTH))
+            for (Edge e : vertex.getEdges(Direction.OUT)) {
                 removeEdge(e);
+            }
+            for (Edge e : vertex.getEdges(Direction.IN)) {
+                removeEdge(e);
+            }
 
             XVertexProxy vp = (XVertexProxy) vertex;
             tx().removeVertex(vp.key());
@@ -164,7 +177,7 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
 
     @Override
     public Iterable<Vertex> getVertices() {
-        Iterator<Integer> vIdL = tx().getVertices();
+        Iterator<XVertex> vIdL = tx().getVertices();
         Iterator<XVertexProxy> vL = Iterators.transform(vIdL, XVertexProxy.makeVertex(this));
         return new ImmutableList.Builder<Vertex>()
                         .addAll(vL)
@@ -181,8 +194,11 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
     @Override
     public Edge addEdge(Object id, Vertex outVertex, Vertex inVertex, String label) {
         // TODO: add to indices
+        if (label == null)
+            throw ExceptionFactory.edgeLabelCanNotBeNull();
         XVertexProxy oV = (XVertexProxy) outVertex;
         XVertexProxy iV = (XVertexProxy) inVertex;
+        // Are these real vertices?
         XEdge xe = new XEdge(edgeCounter.getAndIncrement(),
                 oV.key(), iV.key(), label);
         tx().addEdge(xe);
@@ -197,31 +213,51 @@ public class GitGraph implements TransactionalGraph, IndexableGraph, KeyIndexabl
         if (null == id)
             throw ExceptionFactory.edgeIdCanNotBeNull();
         try {
-            final Integer intID;
+            final Integer intId;
             if (id instanceof Integer)
-                intID = (Integer) id;
+                intId = (Integer) id;
+            else if (id instanceof Number)
+                intId = ((Number) id).intValue();
             else
-                intID = Integer.valueOf(id.toString());
-//            return cache.edge().get(intID);
-        } catch (NumberFormatException | ClassCastException e) {
-            log.error("could not use edge id {}", id);
+                intId = Double.valueOf(id.toString()).intValue();
+            XEdge xe = tx().getEdge(intId);
+            return (null == xe) ? null : XEdgeProxy.of(xe, this);
+        } catch (XCache.NotFoundException e) {
+            log.error("could not find vertex by id {}", id);
+        } catch (NumberFormatException e) {
+            log.error("could not use vertex id {}", id);
         }
         return null;
     }
 
     @Override
     public void removeEdge(Edge edge) {
-        // TODO: queue W-B
-        checkNotNull(edge);
-        XEdgeProxy e = (XEdgeProxy) edge;
         // TODO: remove from indices
-//        cache.edge().remove(e.key());
+        try {
+            checkNotNull(edge);
+
+            XEdgeProxy ep = (XEdgeProxy) edge;
+            log.info("Edge Proxy {}", ep);
+
+            XVertexProxy vOut = ep.getOutVertex();
+            vOut.removeEdge(ep.key());
+
+            XVertexProxy vIn  = ep.getInVertex();
+            vIn.removeEdge(ep.key());
+
+            tx().removeEdge(ep.key());
+        } catch (XCache.NotFoundException e) {
+            log.error("Edge {} not found", edge);
+        }
     }
 
     @Override
     public Iterable<Edge> getEdges() {
-        //return new CovariantIterable<Edge>(newArrayList(cache.edge().list()));
-        return Collections.emptyList();
+        Iterator<XEdge> vIdL = tx().getEdges();
+        Iterator<XEdgeProxy> vL = Iterators.transform(vIdL, XEdgeProxy.makeEdge(this));
+        return new ImmutableList.Builder<Edge>()
+                .addAll(vL)
+                .build();
     }
 
     @Override
